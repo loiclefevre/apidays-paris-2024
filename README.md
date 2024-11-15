@@ -13,3 +13,7 @@
 
 # Softwares
 Oracle Database 23ai has a [FREE edition](oracle.com/database/free) for Windows, Linux and MAC OS (ARM). [FREE edition Docker images](https://hub.docker.com/r/gvenzl/oracle-free) are also available! Also used with the React demo, [Oracle REST Data Services](oracle.com/ords) is available for free. If you are looking for the simplest way: use an [Always FREE Autonomous Database 23ai](oracle.com/cloud/free).
+
+# Other Labs
+You can find more tutorials and labs in [Oracle LiveLabs](https://livelabs.oracle.com).
+
