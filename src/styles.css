@@ -9,7 +9,7 @@ html {
     padding: 16px;
     background-image: url("/public/img/23ai.png");
     background-repeat: no-repeat;
-    background-position: 400px 200px;
+    background-position: right 200px;
   }
   
   html * {
