@@ -7,6 +7,9 @@ html {
     max-width: 600px;
     margin: 0 auto;
     padding: 16px;
+    background-image: url("/public/img/23ai.png");
+    background-repeat: no-repeat;
+    background-position: 400px 200px;
   }
   
   html * {

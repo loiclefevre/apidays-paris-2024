@@ -22,57 +22,6 @@ const jsonSchemaDemo = await ORDS.getSchema();
 
 //console.log(jsonSchemaDemo);
 
-const jsonSchemaDemo2 = {
-  additionalProperties: false,
-  properties: {
-    name: {
-      title: "Name",
-      type: "string",
-      minLength: 3,
-      default: "vanilla team"
-    },
-    plan: {
-      title: "Account plan",
-      description: "Pick the best plan that suits your needs.",
-      oneOf: [
-        { const: "personal", title: "Personal" },
-        { const: "standard", title: "Standard" },
-        { const: "enterprise", title: "Enterprise" }
-      ],
-      type: "string"
-    },
-    team_size: {
-      title: "Team size",
-      description: "Including you, how many members does your team has?",
-      type: "number",
-      minimum: 1
-    }
-  },
-  allOf: [
-    {
-      $comment:
-        "If plan is enterprise, then team_size is required and must be bigger than 3.",
-      if: {
-        properties: {
-          plan: {
-            const: "enterprise"
-          }
-        },
-        required: ["plan"]
-      },
-      then: {
-        properties: {
-          team_size: {
-            minimum: 3
-          }
-        },
-        required: ["team_size"]
-      }
-    }
-  ],
-  required: ["name", "plan"]
-};
-
 const fieldsMap = {
   text: FieldText,
   number: FieldNumber,
@@ -85,7 +34,6 @@ const initialValuesFromAPI = {
     PRICE: 99.99,
     QUANTITY: 10
 }
-
 
 export default function WithReact() {
   const { fields, handleValidation } = createHeadlessForm(jsonSchemaDemo, {
@@ -102,12 +50,13 @@ export default function WithReact() {
       );
       console.log("Submitted!", { jsonValues });
 
+      // insert form data as a JSON document into a JSON Relational Duality view
       await ORDS.insertNewProduct( jsonValues );
     }
 
   return (
     <article>
-      <h1>Oracle Database 23ai JSON Schema with json-schema-form and React</h1>
+      <h1>Oracle Database 23ai JSON Schema<br/> with json-schema-form and React</h1>
       <p>This demo uses React without any other Form library. The JSON Schema is retrieved from the database used as a <b>central JSON Schema repository</b>.</p>
       <br />
 
