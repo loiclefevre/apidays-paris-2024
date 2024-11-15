@@ -1,0 +1,93 @@
+{
+  "$id": "https://example.com/blog-post.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "A representation of a blog post",
+  "type": "object",
+  "required": ["title", "content", "author"],
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "content": {
+      "type": "string"
+    },
+    "publishedDate": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "author": {
+      "$ref": "https://example.com/user-profile.schema.json"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "$def": {
+    "$id": "https://example.com/user-profile.schema.json",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "description": "A representation of a user profile",
+    "type": "object",
+    "required": ["username", "email"],
+    "properties": {
+      "username": {
+        "type": "string"
+      },
+      "email": {
+        "type": "string",
+        "format": "email"
+      },
+      "fullName": {
+        "type": "string"
+      },
+      "age": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "location": {
+        "type": "string"
+      },
+      "interests": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
+
+{
+  "$id": "https://example.com/user-profile.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "A representation of a user profile",
+  "type": "object",
+  "required": ["username", "email"],
+  "properties": {
+    "username": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string",
+      "format": "email"
+    },
+    "fullName": {
+      "type": "string"
+    },
+    "age": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "location": {
+      "type": "string"
+    },
+    "interests": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

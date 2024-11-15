@@ -1,0 +1,64 @@
+{
+  "type" : "object",
+  "o:length" : 1,
+  "properties" :
+  {
+    "tags" :
+    {
+      "type" : "array",
+      "o:length" : 1,
+      "o:preferred_column_name" : "tags",
+      "items" :
+      {
+        "type" : "string",
+        "o:length" : 16,
+        "o:preferred_column_name" : "scalar_string"
+      }
+    },
+    "title" :
+    {
+      "type" : "string",
+      "o:length" : 16,
+      "o:preferred_column_name" : "title"
+    },
+    "author" :
+    {
+      "type" : "object",
+      "o:length" : 1,
+      "o:preferred_column_name" : "author",
+      "properties" :
+      {
+        "email" :
+        {
+          "type" : "string",
+          "o:length" : 32,
+          "o:preferred_column_name" : "email"
+        },
+        "username" :
+        {
+          "type" : "string",
+          "o:length" : 16,
+          "o:preferred_column_name" : "username"
+        }
+      }
+    },
+    "content" :
+    {
+      "type" : "string",
+      "o:length" : 64,
+      "o:preferred_column_name" : "content"
+    },
+    "publishedDate" :
+    {
+      "type" : "string",
+      "o:length" : 32,
+      "o:preferred_column_name" : "publishedDate"
+    },
+    "garbageDocument" :
+    {
+      "type" : "boolean",
+      "o:length" : 4,
+      "o:preferred_column_name" : "garbageDocument"
+    }
+  }
+}
