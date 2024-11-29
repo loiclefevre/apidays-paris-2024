@@ -1,3 +1,11 @@
+-- cleanup
+drop table if exists blog_posts purge;
+drop table if exists products purge;
+drop view products_dv;
+drop table if exists posts purge;
+drop domain if exists BlogPost;
+drop table if exists orders purge;
+
 ----------------------------------------------------------------------
 -- Use case 1: structure discovery with JSON Data Guide
 ----------------------------------------------------------------------
@@ -543,26 +551,33 @@ from posts p;
 
 create table orders ( j json );
 
-insert into orders(j) values (json {'firstName':'Loïc', 'address' : 'Paris'});
+insert into orders(j) values (
+  json {'firstName':'Loïc', 'address' : 'Paris'}
+);
 commit;
 
 -- drop index s_idx force;
 
--- Create Full-Text Search index for JSON with Data Guide enabled and add_vc
--- stored procedure enabled to change table structure: add virtual column for
--- JSON fields: helpful for Analytics => you directly have the existing JSON
--- fields listed as columns!
+-- Create Full-Text Search index for JSON with Data Guide enabled 
+-- and add_vc stored procedure enabled to change table structure: 
+-- add virtual column for JSON fields: helpful for Analytics => 
+-- you directly have the existing JSON fields listed as columns!
 create search index s_idx on orders(j) for json
 parameters('dataguide on change add_vc');
 
 select * from orders;
 
-insert into orders(j) values (json {'firstName':'Loïc', 'address' : 'Paris', 'vat': false});
+insert into orders(j) values (
+  json {'firstName':'Loïc', 'address' : 'Paris', 'vat': false}
+);
 commit;
 
 select * from orders;
 
-insert into orders(j) values (json {'firstName':'Loïc', 'address' : 'Paris', 'vat': false, 'tableEvolve': true});
+insert into orders(j) values (
+  json {'firstName':'Loïc', 'address' : 'Paris', 'vat': false,
+        'tableEvolve': true}
+);
 commit;
 
 select * from orders;
