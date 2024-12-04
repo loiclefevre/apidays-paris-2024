@@ -9,9 +9,9 @@ drop table if exists posts purge;
 drop domain if exists BlogPost;
 drop table if exists orders purge;
 
-----------------------------------------------------------------------
+-------------------------------------------------------------
 -- Use case 1: structure discovery with JSON Data Guide
-----------------------------------------------------------------------
+-------------------------------------------------------------
 
 create table blog_posts (
   data json -- BINARY JSON
@@ -32,12 +32,16 @@ insert into blog_posts(data) values(
 commit;
 
 -- SQL dot notation to navigate in JSON hierarchy
-select p.data.title, p.data.author.username.string()
+select p.data.title, 
+       p.data.author.username.string() as username,
+       p.data.tags[1].string() as "array_field[1]"
   from blog_posts p;
 
 -- Nothing prevents inserting bad data!
 insert into blog_posts values('{"garbageDocument":true}');
 commit;
+
+select data from blog_posts;
 
 -- JSON Schema to the rescue, but how to create it? 
 -- Ask the database!
@@ -50,9 +54,9 @@ select json_dataguide(
 from blog_posts;
 -- check generated JSON schema in other tab
 
-----------------------------------------------------------------------
+-------------------------------------------------------------
 -- Use case 2: Data Validation
-----------------------------------------------------------------------
+-------------------------------------------------------------
 
 -- Validate the generated JSON schema
 select dbms_json_schema.is_schema_valid( 
@@ -87,7 +91,7 @@ select dbms_json_schema.validate_report( data,
   ) 
 from blog_posts;
 
--- Generate validation *REPORT* with a JSON schema on all the data
+-- Validation *REPORT* with a JSON schema on all the data
 -- Source: https://json-schema.org/learn/json-schema-examples#blog-post
 select dbms_json_schema.validate_report( 
   data,
@@ -221,7 +225,7 @@ select dbms_json_schema.is_valid(
   data 
 from blog_posts;
 
--- Another way to create a JSON schema: from a Relational table!
+-- Also create a JSON schema: from a Relational table!
 select dbms_json_schema.describe( 'BLOG_POSTS' );
 
 
@@ -230,12 +234,12 @@ select dbms_json_schema.describe( 'BLOG_POSTS' );
 -- drop table if exists products purge;
 
 create table products (
-    name     varchar2(100) not null primary key
-        constraint minimal_name_length check (length(name) >= 3),
-    price    number not null,
-        constraint strictly_positive_price check (price > 0),
-    quantity number not null,
-        constraint non_negative_quantity check (quantity >= 0)
+  name     varchar2(100) not null primary key
+    constraint minimal_name_length check (length(name) >= 3),
+  price    number not null,
+    constraint strictly_positive_price check (price > 0),
+  quantity number not null,
+    constraint non_negative_quantity check (quantity >= 0)
 );
 
 insert into products (name, price, quantity)
@@ -251,17 +255,17 @@ select dbms_json_schema.describe('PRODUCTS');
 alter table products modify NAME annotations (
   ADD "title" 'Name',
   ADD "description" 'Product name (max length: 100)',
-  ADD "minLength" '3' -- json-schema-form not supporting allOf [] constraint yet
+  ADD "minLength" '3'
 );
 alter table products modify PRICE annotations (
   ADD "title" 'Price',
   ADD "description" 'Product price strictly positive',
-  ADD "minimum" '0.01' -- json-schema-form not supporting allOf [] constraint yet
+  ADD "minimum" '0.01'
 );
 alter table products modify QUANTITY annotations (
   ADD "title" 'Quantity',
   ADD "description" 'Quantity of products >= 0',
-  ADD "minimum" '0' -- json-schema-form not supporting allOf [] constraint yet
+  ADD "minimum" '0'
 );
 
 -- View annotations
@@ -310,6 +314,11 @@ end;
 
 select getAnnotatedJSONSchema('PRODUCTS');
 
+-- GET : select getAnnotatedJSONSchema('PRODUCTS') as schema;
+-- POST: insert into PRODUCTS_DV(data) values( 
+--         json_transform(:body_text, RENAME '$.NAME'='_id')
+--       );
+
 create or replace json relational duality view products_dv as
 products @insert
 {
@@ -318,10 +327,16 @@ products @insert
   QUANTITY
 };
 
--- GET : select getAnnotatedJSONSchema('PRODUCTS') as schema;
--- POST: insert into PRODUCTS_DV(data) values( 
---           json_transform( :body_text, RENAME '$.NAME' = '_id')
---       );
+-- Insert JSON in a Relational table (Bridging the Gap...)
+-- by using the JSON Relational Duality View
+insert into PRODUCTS_DV(data) values( 
+    json_transform( '{"NAME": "Other nice product", 
+                      "PRICE": 5, 
+                      "QUANTITY": 10}', 
+                    RENAME '$.NAME' = '_id'
+    )
+);
+commit;
 
 select * from products_dv;
 select * from products;
@@ -332,7 +347,7 @@ select json{*} as data,
   dbms_json_schema.is_valid( 
       json{*}, 
       (select dbms_json_schema.describe('PRODUCTS')) 
-  ) = 1 as is_valid 
+  ) = 1 as is_valid
 from products;
 
 -- PRECHECK constraint
@@ -359,9 +374,6 @@ values ('Bad product', 0, -1);
 commit;
 
 select * from products;
-
-delete from products where name='Bad product';
-commit;
 
 -- Introducing Data Use Case Domains
 create domain if not exists jsonb as json;
@@ -435,11 +447,13 @@ validate '{
         }
         }';
 
--- Now use the Data Use Case Domain as a new column data type!
+-- Now use the Domain as a new column data type!
 create table posts ( content BlogPost );
 
-insert into posts values (json{ 'garbageDocument' : true }); -- fails
+-- fails
+insert into posts values (json{ 'garbageDocument' : true });
 
+-- works
 insert into posts values (
     json {
         'title': 'Best brownies recipe ever!',
@@ -451,7 +465,7 @@ insert into posts values (
         },
         'tags': ['Cooking', 'Chocolate', 'Cocooning']
     }
-); -- works
+);
 commit;
 
 -- Now let's look at the publishedDate field...
@@ -460,15 +474,15 @@ select p.content.publishedDate from posts p;
 -- ...its binary encoded data type is:
 select p.content.publishedDate.type() from posts p;
 
-----------------------------------------------------------------------
+-------------------------------------------------------------
 -- Use case 3: Performance Improvement
-----------------------------------------------------------------------
+-------------------------------------------------------------
 
 drop table if exists posts purge;
 
 drop domain if exists BlogPost;
 
--- Recreate the Data Use Case Domain with CAST/Type coercion enabled
+-- Recreate the Domain with CAST/Type coercion enabled
 create domain BlogPost as json
 validate CAST using '{
         "$id": "https://example.com/blog-post.schema.json",
@@ -533,10 +547,11 @@ validate CAST using '{
 
 create table posts ( content BlogPost );
 
--- We can retrieve the JSON schema associated to the column via the 
--- Data Use Case Domain
+-- We can retrieve the JSON schema associated to the column
+-- via the Data Use Case Domain
 select dbms_json_schema.describe( 'POSTS' );
 
+-- works
 insert into posts values (
     '{
         "title": "Best brownies recipe ever!",
@@ -548,7 +563,7 @@ insert into posts values (
         },
         "tags": ["Cooking", "Chocolate", "Cocooning"]
     }'
-); -- works
+);
 commit;
 
 -- Now let's look at the publishedDate field...
@@ -562,9 +577,9 @@ select p.content.publishedDate.dateWithTime() + '5' days
 from posts p;
 
 
-----------------------------------------------------------------------
+-------------------------------------------------------------
 -- Use case 4: Relational Model Evolution
-----------------------------------------------------------------------
+-------------------------------------------------------------
 -- drop table if exists orders purge;
 
 create table orders ( j json );
@@ -574,27 +589,31 @@ insert into orders(j) values (
 );
 commit;
 
+select j from orders;
+
 -- drop index s_idx force;
 
--- Create Full-Text Search index for JSON with Data Guide enabled 
--- and add_vc stored procedure enabled to change table structure: 
--- add virtual column for JSON fields: helpful for Analytics => 
--- you directly have the existing JSON fields listed as columns!
+-- Create a Full-Text Search index for JSON with Data Guide
+-- enabled and add_vc stored procedure enabled to change
+-- table structure: add virtual column for JSON fields,
+-- helpful for Analytics => you directly have the existing
+-- JSON fields listed as columns!
 create search index s_idx on orders(j) for json
 parameters('dataguide on change add_vc');
 
 select * from orders;
 
 insert into orders(j) values (
-  json {'firstName':'Loïc', 'address' : 'Paris', 'vat': false}
+  json {'firstName':'Loïc', 'address' : 'Paris', 
+        'vat': false}
 );
 commit;
 
 select * from orders;
 
 insert into orders(j) values (
-  json {'firstName':'Loïc', 'address' : 'Paris', 'vat': false,
-        'tableEvolve': true}
+  json {'firstName':'Loïc', 'address' : 'Paris', 
+        'vat': false, 'tableEvolve': true}
 );
 commit;
 
