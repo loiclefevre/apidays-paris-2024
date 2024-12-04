@@ -1,4 +1,5 @@
 -- cleanup
+alter session set NLS_TIMESTAMP_FORMAT='RR-MM-DD"T"HH24:MI:SS"Z"';
 set linesize 65;
 set long 10000;
 set pagesize 1;
@@ -8,6 +9,7 @@ drop view products_dv;
 drop table if exists posts purge;
 drop domain if exists BlogPost;
 drop table if exists orders purge;
+drop table test purge;
 
 -------------------------------------------------------------
 -- Use case 1: structure discovery with JSON Data Guide
@@ -498,7 +500,7 @@ validate CAST using '{
             "type": "string"
             },
             "publishedDate": {
-"extendedType": "date",
+"extendedType": "timestamp",
             "format": "date-time"
             },
             "author": {
