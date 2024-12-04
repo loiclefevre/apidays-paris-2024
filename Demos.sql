@@ -1,4 +1,7 @@
 -- cleanup
+set linesize 65;
+set long 10000;
+set pagesize 1;
 drop table if exists blog_posts purge;
 drop table if exists products purge;
 drop view products_dv;
@@ -9,8 +12,6 @@ drop table if exists orders purge;
 ----------------------------------------------------------------------
 -- Use case 1: structure discovery with JSON Data Guide
 ----------------------------------------------------------------------
-
-drop table if exists blog_posts purge;
 
 create table blog_posts (
   data json -- BINARY JSON
@@ -30,10 +31,9 @@ insert into blog_posts(data) values(
 );
 commit;
 
+-- SQL dot notation to navigate in JSON hierarchy
 select p.data.title, p.data.author.username.string()
   from blog_posts p;
-
-select json_serialize(p.data) from blog_posts p;
 
 -- Nothing prevents inserting bad data!
 insert into blog_posts values('{"garbageDocument":true}');
@@ -57,6 +57,7 @@ from blog_posts;
 -- Validate the generated JSON schema
 select dbms_json_schema.is_schema_valid( 
     (
+      -- Generate JSON Data Guide/Schema from data column
       select json_dataguide(
         data,
         dbms_json.format_schema,
@@ -66,7 +67,7 @@ select dbms_json_schema.is_schema_valid(
     ) 
 ) = 1 as is_schema_valid;
 
--- Validate current JSON data
+-- Validate current JSON data with a simple JSON schema
 select dbms_json_schema.validate_report( data,
   json( '{
           "type" : "object",
@@ -86,7 +87,7 @@ select dbms_json_schema.validate_report( data,
   ) 
 from blog_posts;
 
--- Generate validation report with a JSON schema on all the data
+-- Generate validation *REPORT* with a JSON schema on all the data
 -- Source: https://json-schema.org/learn/json-schema-examples#blog-post
 select dbms_json_schema.validate_report( 
   data,
@@ -263,6 +264,13 @@ alter table products modify QUANTITY annotations (
   ADD "minimum" '0' -- json-schema-form not supporting allOf [] constraint yet
 );
 
+-- View annotations
+select column_name, annotation_name, annotation_value
+  from user_annotations_usage
+ where object_name='PRODUCTS'
+   and object_type='TABLE'
+order by 1, 2;
+
 -- Annotate JSON Schema with column level annotations
 create or replace function getAnnotatedJSONSchema( p_table_name in varchar2 )
 return json
@@ -310,6 +318,11 @@ products @insert
   QUANTITY
 };
 
+-- GET : select getAnnotatedJSONSchema('PRODUCTS') as schema;
+-- POST: insert into PRODUCTS_DV(data) values( 
+--           json_transform( :body_text, RENAME '$.NAME' = '_id')
+--       );
+
 select * from products_dv;
 select * from products;
 
@@ -317,8 +330,8 @@ select * from products;
 -- validate data
 select json{*} as data,
   dbms_json_schema.is_valid( 
-  json{*}, 
-  (select dbms_json_schema.describe('PRODUCTS')) 
+      json{*}, 
+      (select dbms_json_schema.describe('PRODUCTS')) 
   ) = 1 as is_valid 
 from products;
 
@@ -333,9 +346,9 @@ alter table products modify constraint
 --
 -- /!\ Warning: do that at your own risks!
 alter table products modify constraint 
-      strictly_positive_price disable precheck;
+      strictly_positive_price disable;
 alter table products modify constraint 
-      non_negative_quantity disable precheck;
+      non_negative_quantity disable;
 
 -- Check constraints still present inside the JSON Schema
 select dbms_json_schema.describe( 'PRODUCTS' );
@@ -350,6 +363,12 @@ select * from products;
 delete from products where name='Bad product';
 commit;
 
+-- Introducing Data Use Case Domains
+create domain if not exists jsonb as json;
+
+create table test ( 
+  data jsonb -- JSON alias
+);
 
 -- Another way to validate JSON data: Data Use Case Domain
 -- drop table if exists posts purge;
@@ -451,7 +470,7 @@ drop domain if exists BlogPost;
 
 -- Recreate the Data Use Case Domain with CAST/Type coercion enabled
 create domain BlogPost as json
-validate cast using '{
+validate CAST using '{
         "$id": "https://example.com/blog-post.schema.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "description": "A representation of a blog post",
@@ -519,17 +538,16 @@ create table posts ( content BlogPost );
 select dbms_json_schema.describe( 'POSTS' );
 
 insert into posts values (
-    json {
-        'title': 'Best brownies recipe ever!',
-        'content': 'Take chocolate...',
-        'publishedDate': to_date('2024-12-05T13:00:00Z',
-                                 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
-        'author': {
-            'username': 'Loïc',
-            'email': 'loic.lefevre@oracle.com'
+    '{
+        "title": "Best brownies recipe ever!",
+        "content": "Take chocolate...",
+        "publishedDate": "2024-12-05T13:00:00Z",
+        "author": {
+            "username": "Loïc",
+            "email": "loic.lefevre@oracle.com"
         },
-        'tags': ['Cooking', 'Chocolate', 'Cocooning']
-    }
+        "tags": ["Cooking", "Chocolate", "Cocooning"]
+    }'
 ); -- works
 commit;
 
