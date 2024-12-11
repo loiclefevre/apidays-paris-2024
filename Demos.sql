@@ -255,19 +255,22 @@ select dbms_json_schema.describe('PRODUCTS');
 
 -- Leverage SQL Annotations to annotate the JSON Schema
 alter table products modify NAME annotations (
-  ADD "title" 'Name',
-  ADD "description" 'Product name (max length: 100)',
-  ADD "minLength" '3'
+  ADD OR REPLACE "title" 'Name',
+  ADD OR REPLACE "description" 
+                     'Product name (max length: 100)',
+  ADD OR REPLACE "minLength" '3'
 );
 alter table products modify PRICE annotations (
-  ADD "title" 'Price',
-  ADD "description" 'Product price strictly positive',
-  ADD "minimum" '0.01'
+  ADD OR REPLACE "title" 'Price',
+  ADD OR REPLACE "description" 
+                     'Product price strictly positive',
+  ADD OR REPLACE "minimum" '0.01'
 );
 alter table products modify QUANTITY annotations (
-  ADD "title" 'Quantity',
-  ADD "description" 'Quantity of products >= 0',
-  ADD "minimum" '0'
+  ADD OR REPLACE "title" 'Quantity',
+  ADD OR REPLACE "description" 
+                     'Quantity of products >= 0',
+  ADD OR REPLACE "minimum" '0'
 );
 
 -- View annotations
@@ -328,6 +331,9 @@ products @insert
   PRICE
   QUANTITY
 };
+
+-- Get JSON Schema from JSON Relational Duality View
+select dbms_json_schema.describe('PRODUCTS_DV');
 
 -- Insert JSON in a Relational table (Bridging the Gap...)
 -- by using the JSON Relational Duality View
